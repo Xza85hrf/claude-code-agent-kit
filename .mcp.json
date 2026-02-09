@@ -1,0 +1,69 @@
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "description": "Persistent memory across sessions"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@context7/mcp-server"
+      ],
+      "description": "Live documentation lookup for any library"
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "description": "Chain-of-thought reasoning for complex problems"
+    },
+    "ollama": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "ollama-mcp"
+      ],
+      "env": {
+        "OLLAMA_HOST": "http://localhost:11434",
+        "OLLAMA_API_KEY": ""
+      },
+      "description": "Ollama workers (cloud-first): qwen3-coder-next:cloud → qwen3-coder-next:latest, glm-4.7:cloud → glm-4.7-flash, kimi-k2.5:cloud (cloud-only), gemini-3-pro-preview (cloud-only)"
+    },
+    "deepseek": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "deepseek-mcp-server"
+      ],
+      "env": {
+        "DEEPSEEK_API_KEY": "${DEEPSEEK_API_KEY}"
+      },
+      "description": "DeepSeek R1 reasoning + V3 chat"
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub operations - PRs, issues, repos"
+    }
+  },
+  "disabledMcpServers": [
+    "filesystem",
+    "vercel",
+    "cloudflare-docs",
+    "cloudflare-workers",
+    "n8n"
+  ]
+}

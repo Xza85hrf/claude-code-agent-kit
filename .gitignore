@@ -1,0 +1,27 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Environment / secrets
+.env
+.env.local
+*.key
+*.pem
+
+# Claude Code local state
+.claude/memory/
+.claude/*.local.md
+
+# Node modules (from npx MCP servers)
+node_modules/
+
+# Backup files from setup.sh
+*.bak

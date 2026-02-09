@@ -1,0 +1,285 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__sequential-thinking__sequentialthinking"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "memory",
+    "context7",
+    "sequential-thinking",
+    "ollama",
+    "deepseek",
+    "github"
+  ],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/delegation-check.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-skill-check.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-ollama-models.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-dangerous-git.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/validate-commit.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/validate-github-url.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/verify-before-explore.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-file-size.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/delegation-reminder-write.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/delegation-reminder-edit.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__plugin_serena_serena__create_text_file|mcp__plugin_serena_serena__replace_content|mcp__plugin_serena_serena__replace_symbol_body|mcp__plugin_serena_serena__insert_after_symbol|mcp__plugin_serena_serena__insert_before_symbol",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/serena-write-guard.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/safe-parallel-bash.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/prevent-common-mistakes.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/handle-fetch-error.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|mcp__plugin_serena_serena__create_text_file|mcp__plugin_serena_serena__replace_content|mcp__plugin_serena_serena__replace_symbol_body|mcp__plugin_serena_serena__insert_after_symbol|mcp__plugin_serena_serena__insert_before_symbol",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-secrets.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|mcp__plugin_serena_serena__create_text_file|mcp__plugin_serena_serena__replace_content|mcp__plugin_serena_serena__replace_symbol_body|mcp__plugin_serena_serena__insert_after_symbol|mcp__plugin_serena_serena__insert_before_symbol",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/security-check.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|mcp__plugin_serena_serena__replace_content|mcp__plugin_serena_serena__replace_symbol_body|mcp__plugin_serena_serena__insert_after_symbol|mcp__plugin_serena_serena__insert_before_symbol",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/test-reminder.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__ollama__ollama_chat|mcp__ollama__ollama_generate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/delegation-token.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/handle-tool-failure.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/teammate-idle.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/task-completed.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true,
+    "serena@claude-plugins-official": true
+  },
+  "_readme": {
+    "description": "Claude Code local settings for the Agent Enhancement Kit",
+    "architecture": "On-demand MCP loading (~25K base tokens vs ~80K+ full)",
+    "see_also": "MCP-CATALOG.md for full plugin list and enable instructions"
+  },
+  "_onDemandPlugins": {
+    "_note": "Enable these per-project as needed by adding to enabledPlugins above",
+    "development": {
+      "playwright@claude-plugins-official": "Browser automation & testing",
+      "greptile@claude-plugins-official": "Code search & PR reviews"
+    },
+    "services": {
+      "Notion@claude-plugins-official": "Page/database management (~21K tokens)",
+      "sentry@claude-plugins-official": "Error tracking (~16K tokens)",
+      "figma@claude-plugins-official": "Design system integration",
+      "linear@claude-plugins-official": "Issue tracking",
+      "supabase@claude-plugins-official": "Database & edge functions",
+      "firebase@claude-plugins-official": "Firebase project management",
+      "stripe@claude-plugins-official": "Payment integration helpers"
+    },
+    "example_enable": "To enable Sentry: add \"sentry@claude-plugins-official\": true to enabledPlugins"
+  },
+  "_installation": {
+    "steps": [
+      "1. Copy this file to your-project/.claude/settings.local.json",
+      "2. Copy hooks/ folder to your-project/.claude/hooks/",
+      "3. Copy skills/ folder to your-project/.claude/skills/",
+      "4. Ensure hook scripts are executable: chmod +x .claude/hooks/*.sh",
+      "5. Ensure jq is installed: sudo apt install jq",
+      "6. Restart Claude Code to load settings"
+    ],
+    "skills_note": "Skills in .claude/skills/ require explicit Skill() invocation",
+    "hooks_note": "Hooks provide quality gates (secret detection, git safety, etc.)",
+    "plugins_note": "Add on-demand plugins to enabledPlugins as needed per-project"
+  }
+}
