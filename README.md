@@ -20,6 +20,8 @@ That's it. Run `./install.sh --help` to see flags (`--profile minimal|standard`,
 
 > Already have a `.claude/` directory in your target? The installer moves it to `.claude.backup.<timestamp>/` first. Re-runnable and safe.
 
+**Dive deeper:** [Installation](docs/INSTALLATION.md) · [Hooks](docs/HOOKS.md) · [Delegation](docs/DELEGATION.md) · [Skills](docs/SKILLS.md) · [Agent Teams](docs/AGENT-TEAMS.md)
+
 ---
 
 ## What Ships
@@ -196,7 +198,9 @@ your-project/
 
 ## Contributing
 
-Bug reports, new skills, and hook contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Bug reports, new skills, and hook contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Security issues go via [SECURITY.md](SECURITY.md) — do not open public issues for vulnerabilities.
+
+Release history: [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

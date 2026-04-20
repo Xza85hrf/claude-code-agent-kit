@@ -1,0 +1,109 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Note: this workflow only reads trusted Actions contexts
+# (runner.temp, matrix.os). It never interpolates attacker-controlled
+# inputs (issue titles, PR bodies, commit messages) into `run:` blocks.
+
+jobs:
+  validate:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    env:
+      TARGET_DIR: ${{ runner.temp }}/scratch-project
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install jq (macOS)
+        if: runner.os == 'macOS'
+        run: brew install jq
+
+      - name: Verify prerequisites
+        run: |
+          bash --version
+          jq --version
+          git --version
+
+      - name: Run installer into scratch directory
+        run: |
+          mkdir -p "$TARGET_DIR"
+          ./install.sh "$TARGET_DIR" --profile standard
+
+      - name: Validate generated settings
+        run: |
+          SETTINGS="$TARGET_DIR/.claude/settings.local.json"
+          jq empty "$SETTINGS"
+          echo "Hook events:"
+          jq -r '.hooks | keys[]' "$SETTINGS"
+          echo "Total hooks:"
+          jq '[.hooks[][]?] | length' "$SETTINGS"
+
+      - name: Validate all shipped JSON
+        run: |
+          ERR=0
+          while IFS= read -r f; do
+            if ! jq empty "$f" 2>/dev/null; then
+              echo "INVALID JSON: $f"
+              ERR=1
+            fi
+          done < <(find .claude -name '*.json' -type f)
+          exit $ERR
+
+      - name: Syntax-check hooks + scripts
+        run: |
+          ERR=0
+          for f in .claude/hooks/*.sh .claude/scripts/*.sh .claude/scripts/lib/*.sh .claude/lib/*.sh install.sh; do
+            [ -f "$f" ] || continue
+            if ! bash -n "$f" 2>&1; then
+              echo "SYNTAX ERROR: $f"
+              ERR=1
+            fi
+          done
+          exit $ERR
+
+      - name: Verify profile switching works
+        run: |
+          bash "$TARGET_DIR/.claude/scripts/apply-profile.sh" minimal
+          jq -e '.env.DELEGATION_MODE == "advisory"' "$TARGET_DIR/.claude/settings.local.json"
+          bash "$TARGET_DIR/.claude/scripts/apply-profile.sh" standard
+          jq -e '.env.DELEGATION_MODE == "graduated"' "$TARGET_DIR/.claude/settings.local.json"
+
+      - name: Scan for leaked personal info
+        run: |
+          PATTERNS='(/home/[a-z]+/|/mnt/[cdefg]/|C:\\\\Users\\\\[A-Za-z]+|brain-feed|codexbar|kaggle|one-vision|cosmos-dashboard|telegram-watcher)'
+          if git ls-files | xargs grep -lE "$PATTERNS" 2>/dev/null; then
+            echo "LEAK DETECTED — files above contain private paths/identifiers"
+            exit 1
+          fi
+          echo "No leaks."
+
+      - name: Verify README links resolve
+        shell: bash
+        run: |
+          ERR=0
+          while IFS= read -r target; do
+            case "$target" in
+              http*|\#*|'') continue ;;
+            esac
+            target="${target%%#*}"
+            if [ ! -e "$target" ]; then
+              echo "Broken link in README.md: $target"
+              ERR=1
+            fi
+          done < <(grep -oE '\]\([^)]+\)' README.md | sed 's/^](//; s/)$//')
+          exit $ERR

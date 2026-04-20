@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Claude Code documentation
+    url: https://docs.anthropic.com/en/docs/claude-code
+    about: For issues with the Claude Code CLI itself, not the kit
+  - name: Ollama Cloud
+    url: https://ollama.com
+    about: For worker-model questions unrelated to kit wiring
