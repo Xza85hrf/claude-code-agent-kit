@@ -1,342 +1,213 @@
 # Claude Code Agent Kit
 
-> Transform Claude Code into an autonomous world-class coding agent.
+> Turn Claude Code into a senior autonomous coding agent. One command to install.
 
-An open-source configuration kit that turns [Claude Code](https://docs.anthropic.com/en/docs/claude-code) into an expert-level autonomous software engineer. Drop these files into any project to get 18 engineering skills, 22 quality hooks, multi-model delegation, and professional development workflows — out of the box.
+An opinionated configuration kit for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Drops 58 skills, ~30 quality hooks, 20 specialist subagents, 5 team presets, and a graduated delegation model into any project — so the agent can plan, delegate bulk code gen to cheaper workers, review the result, and ship.
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Clone the kit
-git clone https://github.com/anthropics/claude-code-agent-kit.git
-
-# 2. Install into your project
+git clone https://github.com/Xza85hrf/claude-code-agent-kit.git
 cd claude-code-agent-kit
-./setup.sh /path/to/your-project
-
-# 3. Start Claude Code in your project
+./install.sh /path/to/your-project
 cd /path/to/your-project
 claude
 ```
 
-That's it. The agent reads `CLAUDE.md` automatically and operates with enhanced protocols.
+That's it. Run `./install.sh --help` to see flags (`--profile minimal|standard`, `--force`).
 
-> **First session?** Copy the initialization prompt from [INIT-PROMPT.md](INIT-PROMPT.md) for optimal startup.
+> Already have a `.claude/` directory in your target? The installer moves it to `.claude.backup.<timestamp>/` first. Re-runnable and safe.
 
 ---
 
-## What's Included
+## What Ships
 
-| Component | Count | Description |
-|-----------|-------|-------------|
-| **Skills** | 18 | Professional engineering workflows (TDD, debugging, SOLID, security, etc.) |
-| **Hooks** | 22 | Automated quality checks (git safety, secrets, security, delegation) |
-| **Guides** | 15+ | Architecture, MCP config, Ollama integration, critical thinking |
-| **MCP Configs** | 2 | Core `.mcp.json` + `.mcp.json.template` for extended services |
-| **Setup** | 2 | Automated `setup.sh` + environment `setup-env.sh` |
+| Component | Count | Purpose |
+|-----------|-------|---------|
+| Skills | **58** | TDD, debugging, SOLID, security review, planning, frontend/backend, CI/CD, accessibility, shipping, and more |
+| Hooks | **~30** | Git safety, secrets scanning, delegation enforcement, test reminders, blast-radius checks, skill gates |
+| Agents | **20** | Reviewers, auditors, debug hypothesis agents, feature-team roles, coordinator |
+| Commands | **12** | `/ship`, `/audit`, `/autodev`, `/retro`, `/preflight`, `/merge-dependabot`, and more |
+| Team presets | **5** | `audit`, `debug`, `feature`, `review`, `swarm` |
+| Rules | auto-loaded | Safety, delegation, git, quality, tool-usage, skill-routing, language-specific (TS/Python) |
+| Profiles | **2** | `minimal` (safety only) and `standard` (full workflow) |
+| Output styles | **4** | `dev`, `research`, `review`, `learning` |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│              CLAUDE OPUS (THE BRAIN)                │
-│                                                     │
-│   Planning · Architecture · Security · Decisions    │
-│   User communication · Quality review               │
-└────────────────────┬────────────────────────────────┘
-                     │ delegates
-         ┌───────────┼───────────┐
-         ▼           ▼           ▼
-   ┌──────────┐ ┌──────────┐ ┌──────────┐
-   │  OLLAMA  │ │ DEEPSEEK │ │   MCP    │
-   │ Workers  │ │ Advisor  │ │ Services │
-   └──────────┘ └──────────┘ └──────────┘
-   Code gen      2nd opinion   Context7
-   Reviews       Edge cases    GitHub
-   Boilerplate   Complex logic Serena
+            ┌──────────────────────────┐
+            │    Claude Code (brain)   │
+            │                          │
+            │  plan · decide · review  │
+            │        integrate         │
+            └────────────┬─────────────┘
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+    ┌──────────┐   ┌──────────┐   ┌──────────┐
+    │  Ollama  │   │ Subagents│   │  Teams   │
+    │  Cloud / │   │  (Haiku/ │   │  2-4     │
+    │  local   │   │  Sonnet) │   │ teammates│
+    └──────────┘   └──────────┘   └──────────┘
+    Code gen       Exploration    Parallel +
+    Boilerplate    Research       competing
+    Reviews        Multi-step     hypotheses
 ```
 
-**Opus decides, workers execute. Opus always reviews.**
+**Graduated delegation.** Above a line threshold the kit nudges you to delegate; past a block threshold it stops you from writing long files by hand unless a worker has been used recently. Tune thresholds or switch to pure advisory mode — see `AGENTS.md`.
 
-The agent automatically delegates code generation (>10 lines) to local Ollama models, saving context tokens and cost. Quality hooks enforce this delegation pattern.
-
----
-
-## Skills System
-
-Skills require **explicit invocation** via `Skill("name")` — they never auto-activate. The `delegation-check` hook reminds which skill to invoke per task type.
-
-### Key Skills
-
-| Skill | Invocation | Use When |
-|-------|------------|----------|
-| Test-Driven Development | `Skill("test-driven-development")` | Implementing features or fixing bugs |
-| Systematic Debugging | `Skill("systematic-debugging")` | Any error, test failure, or unexpected behavior |
-| SOLID Principles | `Skill("solid")` | Writing or reviewing code quality |
-| Security Review | `Skill("security-review")` | Handling user input, auth, APIs, sensitive data |
-| Writing Plans | `Skill("writing-plans")` | Complex multi-step tasks |
-| Executing Plans | `Skill("executing-plans")` | Following through on implementation plans |
-| Brainstorming | `Skill("brainstorming")` | Starting new features or exploring requirements |
-| Parallel Agents | `Skill("dispatching-parallel-agents")` | Multi-file tasks, agent team coordination |
-| Verification | `Skill("verification-before-completion")` | Before declaring any work complete |
-
-[See all 18 skills →](INDEX.md#installed-skills-18)
+**Brain keeps:** planning, security & auth logic, integration, user communication, anything needing Claude Code's tools.
 
 ---
 
-## Quality Hooks
+## Skills: Explicit Invocation
 
-22 automated hooks that run on every tool use — no manual intervention needed.
+Skills **never auto-activate**. Invoke: `Skill("test-driven-development")`. The `proactive-skill-trigger` hook suggests matching skills based on what you just edited.
 
-| Category | Hooks | What They Do |
-|----------|-------|-------------|
-| **Git Safety** | block-dangerous-git, validate-commit | Block force push, reset --hard; enforce conventional commits |
-| **Security** | check-secrets, security-check | Detect API keys in code; catch SQL/command injection |
-| **Delegation** | delegation-check, delegation-reminder-write/edit, delegation-token | Enforce code gen delegation to Ollama workers |
-| **Code Quality** | test-reminder, check-file-size, prevent-common-mistakes | Remind to test; warn on large files |
-| **Error Recovery** | handle-fetch-error, handle-tool-failure, safe-parallel-bash | Guidance on failures; prevent sibling cancellation |
-| **Session** | session-start, check-ollama-models, stop-skill-check | Initialize with best practices; verify models; completion checklist |
-| **URL Safety** | validate-github-url, verify-before-explore | Prevent 404s from wrong GitHub paths |
-| **Agent Teams** | teammate-idle, task-completed | Check for unclaimed tasks; block on merge conflicts |
+High-traffic skills:
 
-[Full hook documentation →](QUALITY-HOOKS.md)
+| Skill | Use When |
+|-------|----------|
+| `test-driven-development` | Any new feature or bug fix |
+| `systematic-debugging` | Errors, failing tests, unexpected behavior |
+| `security-review` | Touching auth, user input, external APIs |
+| `writing-plans` | Non-trivial multi-step work |
+| `ship` | Full release workflow — tests, review, changelog, PR |
+| `thinktank` | Architectural trade-offs — 3–4 models give independent opinions |
+| `pre-landing-review` | Before merging anything significant |
+| `frontend-design-pro` / `frontend-engineering` | UI work (design vs. functional) |
+| `backend-design` / `backend-endpoint` | API and service work |
+| `brainstorming` | Early-stage feature ideation |
+
+[Full skill list →](.claude/skills/skill-table.md)
 
 ---
 
-## Multi-Model Architecture
+## Hooks: 10 Events, ~30 Hooks
 
-The kit uses a **4-tier execution model** to optimize cost and capabilities:
+The `standard` profile wires safety, delegation, and workflow enforcement into Claude Code's hook points.
 
-| Tier | Engine | Cost | Best For |
-|------|--------|------|----------|
-| **1. Ollama Workers** | Local/cloud models | Free | Code generation, reviews, boilerplate |
-| **2. Subagents** | Claude (Task tool) | API tokens | Codebase exploration, multi-tool workflows |
-| **3. Agent Teams** | Multiple Claude instances | API tokens (high) | Complex collaborative work, competing hypotheses |
-| **4. Manual Parallel** | Git worktrees | Human time | Long-running feature branches |
+| Category | Representative hooks | What they do |
+|----------|---------------------|-------------|
+| Git safety | `block-dangerous-git`, `validate-commit`, `blast-radius-check`, `review-gate`, `build-before-push` | Block force-push/reset-hard, enforce Conventional Commits, preview PR review before pushing |
+| Secrets / security | `check-secrets`, `security-check`, `damage-control` | Block API keys hitting disk, catch injection patterns, protect critical paths |
+| Delegation | `delegation-check`, `delegation-reminder`, `delegation-token`, `capability-gate`, `skill-gate` | Enforce worker delegation when file size warrants it; require matching skill loaded for domain writes |
+| Quality | `test-reminder`, `prevent-common-mistakes`, `handle-tool-failure` | Nudge tests after edits, catch common mistakes, explain errors |
+| Session | `session-start`, `session-end`, `stop-skill-check`, `proactive-skill-trigger` | Capture state, suggest skills after edits |
 
-### Worker Models (via Ollama)
+Switch profile later: `bash .claude/scripts/apply-profile.sh minimal` (or `standard`).
 
-| Model | Role | When to Use |
-|-------|------|------------|
-| `qwen3-coder-next` | **Primary Coder** | Complex code generation, agentic workflows |
-| `glm-4.7-flash` | **Fast Coder** | Boilerplate, CRUD, quick tasks |
-| `kimi-k2.5:cloud` | **Swarm Agent + Vision** | Multi-step tasks, screenshot analysis |
-| `devstral-small-2` | **Agentic SWE** | Multi-file editing with tool calling |
-| `deepcoder` | **Code Reasoning** | Algorithmic problems (o3-mini level) |
-| DeepSeek R1 | **Reasoning Advisor** | Second opinions on complex logic |
+---
 
-### Cloud-First Selection
+## Worker Models
 
-When `OLLAMA_API_KEY` is set, the system automatically tries cloud model variants first, falling back to local models:
+Free tier via [Ollama Cloud](https://ollama.com) — fixed $0/$20/$100 monthly pricing, no per-token charges. Optional: OpenAI, DeepSeek, Gemini via API keys.
 
-```
-Cloud model → Local model → Fallback model
+| Role | Primary | Why |
+|------|---------|-----|
+| #1 coder | `glm-5.1:cloud` | Best overall SWE-Bench |
+| #2 coder / review | `minimax-m2.7:cloud` | Second opinion, matches frontier SWE |
+| Deep reasoning | `deepseek-v3.2:cloud` | Hybrid thinking mode |
+| Fast / boilerplate | `qwen3-coder-next:cloud` | Ultra-efficient 3B-active MoE |
+| Vision + code | `gemma4:31b-cloud` | Multimodal understanding |
+
+Models are wired via CLI wrapper `bash .claude/scripts/mcp-cli.sh ollama chat "<model>" "<prompt>"` — no MCP server required, zero context cost.
+
+Set `OLLAMA_API_KEY` in `~/.claude-secrets` (the installer creates a template if missing) to enable cloud models.
+
+---
+
+## Agent Teams
+
+3+ specialists working in parallel with assigned file ownership. Useful for cross-layer features or audits.
+
+```bash
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude
+# Then: "Spawn the audit team on src/auth/"
 ```
 
-[Full Ollama integration guide →](OLLAMA-INTEGRATION.md)
-
----
-
-## MCP Servers
-
-The kit uses **on-demand MCP loading** to keep context lean (~25K base tokens vs ~80K+ with everything enabled).
-
-### Core (Always-On)
-
-| Server | Purpose |
-|--------|---------|
-| `context7` | Live documentation lookup for any library |
-| `memory` | Persistent memory across sessions |
-| `sequential-thinking` | Chain-of-thought reasoning |
-
-### Optional (Enable Per-Project)
-
-| Server | Purpose | Setup |
-|--------|---------|-------|
-| `ollama` | Local model delegation | [Install Ollama](https://ollama.ai) |
-| `deepseek` | R1 reasoning advisor | [Get API key](https://platform.deepseek.com) |
-| `github` | PR/issue operations | [Get token](https://github.com/settings/tokens) |
-| `serena` | Semantic code analysis | Via MCP config |
-
-Enable additional MCPs via `.claude/settings.local.json`. See [MCP-CATALOG.md](MCP-CATALOG.md) for the full list including Notion, Sentry, Figma, Stripe, and more.
-
----
-
-## Configuration
-
-### Customize for Your Project
-
-Edit the **Project-Specific Section** at the bottom of `CLAUDE.md`:
-
-```markdown
-## Project-Specific Section
-
-### Naming Conventions
-- Components: PascalCase (UserProfile.tsx)
-- Utilities: camelCase (formatDate.ts)
-
-### API Conventions
-- RESTful under /api
-- Return { data, error } format
-
-### Testing Requirements
-- Unit tests for all business logic
-- E2E tests for critical user flows
-```
-
-### Add Custom Hooks
-
-1. Create a script in `.claude/hooks/`
-2. Register it in `.claude/settings.local.json`
-3. See [QUALITY-HOOKS.md](QUALITY-HOOKS.md) for the hook format
-
-### Add Custom Skills
-
-1. Create `skills/my-skill/SKILL.md`
-2. Add to [INDEX.md](INDEX.md) and [SKILLS-CATALOG.md](SKILLS-CATALOG.md)
+Presets: `audit` (4 specialists), `debug` (3 hypothesis agents), `feature` (lead + 2 implementers + coordinator), `review` (3 reviewers), `swarm` (coordinator + workers). See `.claude/team-presets/`.
 
 ---
 
 ## Prerequisites
 
-| Requirement | Required | Notes |
-|-------------|----------|-------|
-| [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) | Yes | Anthropic's CLI tool |
-| Bash | Yes | For hooks and setup script |
-| [jq](https://jqlang.github.io/jq/) | Yes | JSON processing in hooks |
-| [Ollama](https://ollama.ai) | Optional | Local AI worker models |
-| [DeepSeek API key](https://platform.deepseek.com) | Optional | R1 reasoning advisor |
-| [GitHub token](https://github.com/settings/tokens) | Optional | For GitHub MCP operations |
+| Required | Optional |
+|----------|----------|
+| `bash` | `claude` CLI ([install](https://docs.anthropic.com/en/docs/claude-code)) |
+| `git` | `OLLAMA_API_KEY` for cloud workers |
+| `jq` | `OPENAI_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY` |
+
+Platforms: macOS, Linux, WSL2. Windows native bash (Git Bash / MSYS) should work but is not primary-tested.
 
 ---
 
-## Manual Installation
+## Customize
 
-If you prefer not to use `setup.sh`:
+**Project conventions.** Edit the bottom of `CLAUDE.md` (Project-Specific Section). Example: naming, API conventions, test requirements.
 
-```bash
-# Copy CLAUDE.md to your project root
-cp CLAUDE.md /path/to/your-project/
+**Profile.** `bash .claude/scripts/apply-profile.sh minimal` to drop delegation/skill-gate enforcement.
 
-# Copy everything else to .claude/
-mkdir -p /path/to/your-project/.claude
-cp -r hooks/ skills/ /path/to/your-project/.claude/
-cp settings.local.json /path/to/your-project/.claude/
-cp *.md /path/to/your-project/.claude/    # Reference docs
+**Add a skill.** Create `.claude/skills/<category>/my-skill/SKILL.md`, then append to `.claude/skills/skill-table.md`. See `writing-skills` skill for the full process.
 
-# Copy MCP config template
-cp .mcp.json.template /path/to/your-project/.mcp.json
+**Add a hook.** Drop a script in `.claude/hooks/`, register it in a profile JSON, re-run `apply-profile.sh`.
 
-# Make hooks executable
-chmod +x /path/to/your-project/.claude/hooks/*.sh
-
-# Set up environment variables
-source setup-env.sh  # Edit values first!
-```
+**Add a rule.** `.claude/rules/my-rule.md` — rules auto-load at session start.
 
 ---
 
-## Installed File Structure
-
-After running `setup.sh`, your project will have:
+## Project Structure After Install
 
 ```
 your-project/
-├── CLAUDE.md                          # Agent brain (project root)
-├── .mcp.json                          # MCP server config (from template)
+├── CLAUDE.md                       # Agent identity + project conventions
+├── AGENTS.md                       # Multi-model agent spec
 └── .claude/
-    ├── hooks/                         # 22 quality check scripts
-    │   ├── block-dangerous-git.sh
-    │   ├── check-secrets.sh
-    │   ├── delegation-check.sh
-    │   ├── test-reminder.sh
-    │   └── ... (18 more)
-    ├── skills/                        # 18 engineering skills
-    │   ├── test-driven-development/
-    │   │   └── SKILL.md
-    │   ├── systematic-debugging/
-    │   │   ├── SKILL.md
-    │   │   ├── root-cause-tracing.md
-    │   │   └── defense-in-depth.md
-    │   ├── solid/
-    │   │   ├── SKILL.md
-    │   │   └── references/            # SOLID, design patterns, etc.
-    │   ├── security-review/
-    │   │   ├── SKILL.md
-    │   │   └── references/            # OWASP, threat modeling
-    │   └── ... (14 more)
-    ├── settings.local.json            # Hook registration config
-    ├── QUALITY-HOOKS.md
-    ├── OLLAMA-INTEGRATION.md
-    ├── SKILLS-MCP-GUIDE.md
-    ├── INDEX.md                       # Navigation index
-    └── ... (10+ more guides)
+    ├── settings.local.json         # Generated from profile
+    ├── hooks/                      # ~30 quality hooks
+    ├── skills/                     # 58 skills, organized by category
+    ├── agents/                     # 20 subagent definitions
+    ├── commands/                   # 12 slash commands
+    ├── team-presets/               # 5 agent team compositions
+    ├── output-styles/              # 4 output style profiles
+    ├── profiles/                   # minimal / standard
+    ├── rules/                      # Auto-loaded behavior rules
+    ├── lib/                        # Shared Bash libraries
+    ├── scripts/                    # Delegation, audit, profile tools
+    └── config/                     # Tool policies, damage-control patterns
 ```
 
 ---
 
-## Testing
+## Design Choices
 
-After installation, verify everything works:
-
-1. **Quick test**: Start Claude Code and ask it to read `CLAUDE.md`
-2. **Full test**: Copy the prompt from [TEST-CAPABILITIES.md](TEST-CAPABILITIES.md) to verify all MCP connections, worker delegation, hooks, and skills
-
----
-
-## Autonomous Operation
-
-The agent operates with clear decision authority:
-
-| Level | Actions | Examples |
-|-------|---------|---------|
-| **Autonomous** | Acts without asking | Read files, run tests, fix obvious bugs, commit to feature branches |
-| **Confirm First** | Asks before acting | Delete files, change APIs, modify schemas, architectural changes |
-| **Escalate** | Always asks human | Production deploys, credentials, destructive git operations |
-
----
-
-## Documentation Index
-
-| Document | Purpose |
-|----------|---------|
-| [CLAUDE.md](CLAUDE.md) | Agent identity, protocols, decision authority |
-| [INDEX.md](INDEX.md) | Quick navigation for all files |
-| [INIT-PROMPT.md](INIT-PROMPT.md) | Copy-paste initialization prompts |
-| [QUALITY-HOOKS.md](QUALITY-HOOKS.md) | Hook documentation and format |
-| [OLLAMA-INTEGRATION.md](OLLAMA-INTEGRATION.md) | Multi-model setup and delegation |
-| [SKILLS-MCP-GUIDE.md](SKILLS-MCP-GUIDE.md) | Skills and MCP usage guide |
-| [MCP-CATALOG.md](MCP-CATALOG.md) | On-demand MCP service catalog |
-| [CRITICAL-THINKING.md](CRITICAL-THINKING.md) | Analysis and debugging frameworks |
-| [TEST-CAPABILITIES.md](TEST-CAPABILITIES.md) | Full capability verification test |
+- **Replace, don't deprecate.** When a new implementation supersedes old, the old code is removed. No backward-compatible shims.
+- **Brain keeps auth, crypto, and final review.** Workers never see auth logic.
+- **Delegation is graduated, not absolute.** Small edits bypass; large files require a worker. Tunable via env vars.
+- **Skills never auto-activate.** Explicit `Skill(...)` invocation keeps the conversation predictable.
+- **Hooks prefer to warn, not block.** Only safety-critical patterns block outright. Everything else is advisory with an escalation path.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
-
-- Reporting issues
-- Submitting pull requests
-- Adding new hooks and skills
-- Coding standards
+Bug reports, new skills, and hook contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
 ## License
 
-[MIT](LICENSE) — use it, modify it, share it.
+[MIT](LICENSE) — use it, fork it, ship it.
 
 ---
 
 ## Acknowledgments
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) by Anthropic
-- [Context7](https://context7.com/) for live documentation lookup
-- [Ollama](https://ollama.ai) for local model inference
-- [DeepSeek](https://deepseek.com) for reasoning models
-- Inspired by the Claude Code community and [awesome-claude-code](https://github.com/anthropics/awesome-claude-code)
+- [Ollama](https://ollama.ai) for local + cloud model inference
+- Design inspiration from the Claude Code community

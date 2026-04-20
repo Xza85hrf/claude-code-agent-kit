@@ -27,12 +27,14 @@ Please open a [GitHub Issue](../../issues) with:
 git clone https://github.com/YOUR_USERNAME/claude-code-agent-kit.git
 cd claude-code-agent-kit
 
-# Test in a scratch project
-mkdir /tmp/test-project && cd /tmp/test-project
-/path/to/claude-code-agent-kit/setup.sh
+# Test the installer in a scratch project
+mkdir /tmp/test-project
+./install.sh /tmp/test-project --profile standard
 
-# Verify hooks work
-.claude/hooks/test-hooks.sh
+# Sanity-check the install
+cd /tmp/test-project
+jq -r '.hooks | keys[]' .claude/settings.local.json   # event coverage
+bash .claude/scripts/apply-profile.sh minimal         # switch profile
 ```
 
 ## Coding Standards
@@ -69,17 +71,17 @@ exit 0
 
 ## Adding a New Hook
 
-1. Create `hooks/my-hook.sh`
-2. Make it executable: `chmod +x hooks/my-hook.sh`
-3. Register in `settings.local.json` under the appropriate event (PreToolUse, PostToolUse, etc.)
-4. Test: `echo '{"tool_name":"Bash","tool_input":{"command":"echo test"}}' | ./hooks/my-hook.sh`
+1. Create `.claude/hooks/my-hook.sh`
+2. Make it executable: `chmod +x .claude/hooks/my-hook.sh`
+3. Register in `.claude/profiles/standard.json` (or `minimal.json`) under the appropriate event
+4. Re-apply: `bash .claude/scripts/apply-profile.sh standard`
+5. Test: `echo '{"tool_name":"Bash","tool_input":{"command":"echo test"}}' | ./.claude/hooks/my-hook.sh`
 
 ## Adding a New Skill
 
-1. Create `skills/my-skill/SKILL.md`
-2. Add to `INDEX.md` in the appropriate category table
-3. Add to `SKILLS-CATALOG.md`
-4. Add to the skills table in `CLAUDE.md`
+1. Create `.claude/skills/<category>/my-skill/SKILL.md` (category = architecture, engineering, quality, workflow, meta, integration, optimization)
+2. Frontmatter must include `name` and `description`
+3. Add to `.claude/skills/skill-table.md`
 
 ## Code of Conduct
 

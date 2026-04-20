@@ -1,0 +1,328 @@
+# damage-control-patterns.yaml — Security pattern definitions for damage-control hook
+#
+# Protection Levels:
+#   BLOCK — Always deny, no bypass
+#   ASK   — Deny with advisory (bypass via .git-destructive-bypass token)
+#   ALLOW — Log only, no interference
+#
+# Pattern Categories:
+#   filesystem — File/directory destruction
+#   git        — Destructive git operations
+#   system     — System-level commands
+#   cloud      — Cloud provider destructive operations
+#   process    — Process management
+#   network    — Network-level operations
+
+filesystem:
+  BLOCK:
+    - pattern: 'rm\s+-[a-zA-Z]*r[a-zA-Z]*f.*/'
+      description: "Recursive force delete"
+    - pattern: 'rm\s+-[a-zA-Z]*f[a-zA-Z]*r.*/'
+      description: "Force recursive delete (flag order variant)"
+    - pattern: 'rm\s+-rf\s+/'
+      description: "Root filesystem delete"
+    - pattern: 'chmod\s+-R\s+777'
+      description: "Recursive world-writable permissions"
+    # Anchor the root-filesystem chown to target literally `/` — the
+    # prior pattern `.*\s+/` matched any path containing a space before
+    # a slash, so `chown -R user /tmp/foo` was blocked too. We require
+    # `/` at the end of a command segment (EOL, chain operator, or
+    # trailing whitespace). Real-world false positive during the
+    # v2.1.109 audit: blocked every chown on a subdirectory.
+    - pattern: 'chown\s+-R\s+\S+\s+/(\s|$|[;&|])'
+      description: "Recursive ownership change on root filesystem"
+    - pattern: 'mkfs\.'
+      description: "Format filesystem"
+    # Restrict to actual block-device write targets. Prior pattern
+    # `dd\s+.*of=/dev/` also blocked benign `dd if=file of=/dev/null`
+    # redirects (the canonical way to discard dd output). /dev/null,
+    # /dev/zero, /dev/random, /dev/urandom, /dev/stdout, /dev/stderr
+    # are all safe to write to. Block only sd/hd/nvme/xvd/vd/md/mmcblk
+    # device nodes that correspond to real storage.
+    - pattern: 'dd\s+.*of=/dev/(sd|hd|nvme|xvd|vd|md|mmcblk)[a-z0-9]*'
+      description: "Direct write to block device"
+  ASK:
+    - pattern: 'rm\s+-r\s'
+      description: "Recursive delete (no force)"
+    - pattern: 'rm\s+-f\s'
+      description: "Force delete"
+    - pattern: 'mv\s+.*\s+/dev/null'
+      description: "Move to /dev/null"
+    - pattern: 'truncate\s+-s\s*0'
+      description: "Truncate file to zero"
+    - pattern: '>\s+/(bin|sbin|boot|etc|lib|lib32|lib64|proc|sys|dev|root|usr)(\b|/)'
+      description: "Overwrite redirect to sensitive root path"
+
+git:
+  BLOCK:
+    - pattern: 'git\s+push\s+.*--force($|\s)'
+      description: "Force push (use --force-with-lease)"
+    # Match `-f` as a standalone token (preceded by whitespace,
+    # followed by whitespace or end-of-command). The prior pattern
+    # `-f\s+[^a-z]` required a non-lowercase char after the space,
+    # which excluded the common `git push -f origin main` form
+    # because `o` IS lowercase. This form still rejects longer flags
+    # like `-force` or `-foo` (the `-f` in those is not followed by
+    # whitespace).
+    - pattern: 'git\s+push\s+(.*\s)?-f(\s|$)'
+      description: "Force push short flag"
+    - pattern: 'git\s+push\s+origin\s+:(main|master)($|\s)'
+      description: "Delete remote main/master"
+    - pattern: 'git\s+push\s+--delete\s+.*\s+(main|master)($|\s)'
+      description: "Delete remote main/master branch"
+    - pattern: 'git\s+filter-branch'
+      description: "History rewriting"
+    - pattern: 'git\s+reflog\s+expire\s+--expire=now'
+      description: "Expire all reflog entries immediately"
+    - pattern: 'git\s+gc\s+--prune=now'
+      description: "Immediate garbage collection"
+    - pattern: 'git\s+push\s+origin\s+--mirror'
+      description: "Mirror push (overwrites entire remote)"
+    - pattern: 'git\s+push\s+origin\s+--all\s+--force'
+      description: "Force push all branches"
+  ASK:
+    - pattern: 'git\s+reset\s+--hard'
+      description: "Hard reset (loses uncommitted changes)"
+    - pattern: 'git\s+checkout\s+--\s+\.'
+      description: "Discard all working tree changes"
+    - pattern: 'git\s+clean\s+-f'
+      description: "Force clean untracked files"
+    - pattern: 'git\s+branch\s+-D'
+      description: "Force delete branch"
+    - pattern: 'git\s+stash\s+drop'
+      description: "Drop stash entry"
+    - pattern: 'git\s+stash\s+clear'
+      description: "Clear all stashes"
+    - pattern: 'git\s+push\s+--delete'
+      description: "Delete remote branch (non-main)"
+    - pattern: 'git\s+rebase\s+--force'
+      description: "Force rebase"
+    - pattern: 'git\s+restore\s+\.'
+      description: "Restore all files"
+    - pattern: 'git\s+checkout\s+\.'
+      description: "Checkout all files"
+  ALLOW:
+    - pattern: 'git\s+push\s+.*--force-with-lease'
+      description: "Safe force push (checks remote state)"
+    - pattern: 'git\s+push\s+--dry-run'
+      description: "Dry run push"
+
+system:
+  BLOCK:
+    # Require `shutdown` to actually be invoked as a command, not just
+    # mentioned as a word. Prior unanchored `shutdown` pattern blocked
+    # `echo 'graceful shutdown'`, `git log --grep=shutdown`, `grep
+    # shutdown /var/log/syslog`, `cat shutdown-notes.md`, and every
+    # other command that contained the word anywhere. We now require
+    # a command boundary before (start-of-string or chain operator),
+    # and a shutdown-specific argument after (flag, `now`, `+minutes`,
+    # or end-of-segment). This still catches `shutdown -h now`, `sudo
+    # shutdown now`, `a && shutdown -r`, etc.
+    - pattern: '(^|[;&|][[:space:]]*)(sudo[[:space:]]+)?shutdown([[:space:]]+(-[hrcpHPkK]|now|\+[0-9]+|halt|poweroff)|[[:space:]]*($|[;&|]))'
+      description: "System shutdown command"
+    - pattern: '(^|[;&|][[:space:]]*)(sudo[[:space:]]+)?reboot([[:space:]]+(-[hfFnp]|now)|[[:space:]]*($|[;&|]))'
+      description: "System reboot command"
+    # init 0 / init 6 need the same anchor treatment — word alone on a
+    # command boundary, not mentioned in a docstring.
+    - pattern: '(^|[;&|][[:space:]]*)(sudo[[:space:]]+)?init[[:space:]]+[06]([[:space:]]|$|[;&|])'
+      description: "Init runlevel change"
+    - pattern: 'systemctl\s+(stop|disable)\s+(docker|sshd|networkd)'
+      description: "Stop critical services"
+    - pattern: 'iptables\s+-F'
+      description: "Flush all firewall rules"
+  ASK:
+    - pattern: 'kill\s+-9'
+      description: "Force kill process"
+    - pattern: 'killall'
+      description: "Kill all matching processes"
+    - pattern: 'pkill'
+      description: "Pattern-based process kill"
+    - pattern: 'crontab\s+-r'
+      description: "Remove all crontab entries"
+    - pattern: 'service\s+.*\s+stop'
+      description: "Stop a service"
+
+cloud:
+  BLOCK:
+    # Allow intermediate args (the bucket URI) between `rb` and
+    # `--force`: the canonical form is `aws s3 rb s3://bucket --force`
+    # — prior pattern required `--force` immediately after `rb` and
+    # missed every real invocation.
+    - pattern: 'aws\s+s3\s+rb\s+.*--force'
+      description: "Force delete S3 bucket"
+    - pattern: 'aws\s+ec2\s+terminate-instances'
+      description: "Terminate EC2 instances"
+    - pattern: 'aws\s+rds\s+delete-db-instance'
+      description: "Delete RDS database"
+    - pattern: 'aws\s+cloudformation\s+delete-stack'
+      description: "Delete CloudFormation stack"
+    # Enumerate the gcloud/az resource groups that actually perform
+    # delete operations. Prior patterns `gcloud\s+.*\s+delete` also
+    # matched `gcloud help delete` (help lookup, not a destructive
+    # call) and any command that happened to mention `delete` later
+    # in the line. Match only when the second token is a real resource
+    # group, and allow the middle to be empty so `az vm delete` (two
+    # tokens before delete) still matches alongside `gcloud compute
+    # instances delete` (three tokens before delete).
+    - pattern: 'gcloud\s+(compute|storage|sql|iam|artifacts|pubsub|container|dns|logging|scheduler|functions|run|kms|secrets|redis|dataflow|composer|spanner|bigquery|firestore|datastore|app|organizations|projects|resource-manager)\s+.*delete(\s|$|[;&|])'
+      description: "GCloud delete operation"
+    - pattern: 'az\s+(vm|storage|account|group|sql|network|keyvault|appservice|functionapp|cosmosdb|containerapp|aks|acr|webapp|batch|monitor|backup|cdn|dns|eventhubs|iot|ml|policy|redis|search|servicebus|signalr|staticwebapp)\s+.*delete(\s|$|[;&|])'
+      description: "Azure delete operation"
+    - pattern: 'terraform\s+destroy'
+      description: "Terraform destroy"
+  ASK:
+    - pattern: 'aws\s+s3\s+rm\s+--recursive'
+      description: "Recursive S3 delete"
+    - pattern: 'docker\s+system\s+prune'
+      description: "Docker system prune"
+    - pattern: 'docker\s+volume\s+rm'
+      description: "Docker volume remove"
+
+paths:
+  zeroAccess:
+    - ".env"
+    - ".env.*"
+    - ".ssh/"
+    - "~/.aws/"
+    - "~/.kube/"
+    - "~/.claude-secrets"
+    - "/etc/shadow"
+    - "/etc/passwd"
+  readOnly:
+    - ".gitignore"
+    - "package-lock.json"
+    - "yarn.lock"
+    - "pnpm-lock.yaml"
+    - "Cargo.lock"
+    - "poetry.lock"
+    - "go.sum"
+  noDelete:
+    # Kit source dirs — never deletable as a whole. Ephemeral state under
+    # .claude/ (.tokens, .scratch, .worker-status, .launch-mode, etc.) is
+    # intentionally NOT listed here so the kit can rewrite its own scratch
+    # files. A blanket .claude/ rule broke every attempt to clean temp dirs.
+    - ".claude/hooks/"
+    - ".claude/scripts/"
+    - ".claude/lib/"
+    - ".claude/rules/"
+    - ".claude/config/"
+    - ".claude/profiles/"
+    - ".claude/skills/"
+    - ".claude/agents/"
+    - ".claude/commands/"
+    - ".claude/team-presets/"
+    - ".claude/output-styles/"
+    - ".claude/reference/"
+    - ".claude/paul-framework/"
+    - ".claude-plugin/"
+    - "docs/"
+    - "README.md"
+    - "LICENSE"
+    - "CLAUDE.md"
+    - "AGENTS.md"
+
+# --- Turnstone-inspired categories (Phase 1A) ---
+
+supply_chain:
+  BLOCK:
+    # Anchor curl|bash and wget|bash to start-of-command so they
+    # don't false-match `echo 'install via: curl URL | bash'`.
+    # Still catches the real RCE pattern since the dangerous form
+    # always starts with curl/wget as the command.
+    - pattern: '(^|[;&|][[:space:]]*)curl\s+[^;&|]*\|\s*(bash|sh)(\s|$)'
+      description: "Curl piped to bash/sh — remote code execution risk"
+    - pattern: '(^|[;&|][[:space:]]*)wget\s+(-O[^\s]*\s+)?-O-[^;&|]*\|\s*(bash|sh)(\s|$)'
+      description: "Wget output piped to bash/sh — remote code execution risk"
+    - pattern: 'pip\s+install\s+(-i|--index-url)\s+https?://'
+      description: "Pip install from custom index URL"
+    - pattern: 'pip\s+install\s+--extra-index-url\s+https?://'
+      description: "Pip install from extra index URL"
+    - pattern: 'npm\s+install\s+git\+https?://'
+      description: "NPM install from git URL"
+    - pattern: 'npm\s+install\s+https?://.*\.tgz'
+      description: "NPM install from tarball URL"
+
+browser_data:
+  BLOCK:
+    # Browser data patterns anchored to a READ command invocation at
+    # the start of a segment. Prior patterns (`chrome.*cookies`) were
+    # unanchored substring matches and caught `echo 'chrome cookies
+    # policy'` and any file named `chrome-release-notes.md`. The
+    # new form requires a read/copy/dump tool as the first token and
+    # a specific browser data filename as a target. Case-insensitive
+    # so Chrome's capital `Cookies` / `Login Data` / `History` files
+    # match the lowercase rule text.
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(cat|less|more|head|tail|sqlite3?|strings|xxd|hexdump|cp|mv|dd|scp|rsync)\s+[^;&|]*(chrome|chromium|brave|edge)[^;&|]*cookies'
+      description: "Browser cookies database read (Chrome/Chromium family)"
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(cat|less|more|head|tail|sqlite3?|strings|xxd|hexdump|cp|mv|dd|scp|rsync)\s+[^;&|]*(chrome|chromium|brave|edge)[^;&|]*Login\s*Data'
+      description: "Browser password database read (Chrome/Chromium family)"
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(cat|less|more|head|tail|sqlite3?|strings|xxd|hexdump|cp|mv|dd|scp|rsync)\s+[^;&|]*(chrome|chromium|brave|edge)[^;&|]*History'
+      description: "Browser history database read (Chrome/Chromium family)"
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(cat|less|more|head|tail|sqlite3?|strings|xxd|hexdump|cp|mv|dd|scp|rsync)\s+[^;&|]*firefox[^;&|]*logins\.json'
+      description: "Firefox saved logins access"
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(cat|less|more|head|tail|sqlite3?|strings|xxd|hexdump|cp|mv|dd|scp|rsync)\s+[^;&|]*firefox[^;&|]*key[34]\.db'
+      description: "Firefox key database access"
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(cat|less|more|head|tail|sqlite3?|strings|xxd|hexdump|cp|mv|dd|scp|rsync)\s+[^;&|]*firefox[^;&|]*places\.sqlite'
+      description: "Firefox browser history access"
+    - pattern: 'security\s+(find-generic-password|dump-keychain)'
+      description: "macOS keychain export commands"
+
+container_escape:
+  BLOCK:
+    - pattern: 'docker\s+run\s+.*--privileged'
+      description: "Docker run with privileged flag — container escape risk"
+    - pattern: 'docker\s+exec\s+.*--privileged'
+      description: "Docker exec with privileged flag"
+    - pattern: 'nsenter\s+.*--target\s+1\b'
+      description: "Nsenter targeting host PID 1 — container escape"
+    - pattern: 'mount\s+-t\s+proc\s+'
+      description: "Mount proc filesystem — potential container escape"
+    - pattern: 'docker\s+run\s+.*--pid=host'
+      description: "Docker run with host PID namespace"
+    - pattern: 'docker\s+run\s+.*--net=host'
+      description: "Docker run with host network namespace"
+
+credential_harvest:
+  ASK:
+    - pattern: 'grep\s+(-r|--recursive).*\b(password|secret|api[_-]?key)\b'
+      description: "Recursive grep for credentials"
+    - pattern: 'cat\s+~/\.aws/(credentials|config)'
+      description: "AWS credentials file access"
+    - pattern: 'printenv\s*\|\s*grep'
+      description: "Environment variable filtering"
+    - pattern: 'env\s*\|\s*grep\s+-i.*(key|secret|token|pass)'
+      description: "Environment grep for secrets"
+
+network_exfil:
+  BLOCK:
+    - pattern: 'curl\s+.*(-d|--data).*\b(password|secret|token|key)\b'
+      description: "Curl with credentials in POST data"
+    - pattern: 'curl\s+.*--upload-file'
+      description: "Curl file upload to external host"
+    - pattern: 'nc\s+.*-e\s+/bin/(sh|bash)'
+      description: "Netcat reverse shell"
+    - pattern: 'nc\s+.*-l\b'
+      description: "Netcat listener setup"
+    - pattern: 'wget\s+.*--post-data.*\b(password|secret|token|key)\b'
+      description: "Wget POST with credentials"
+    - pattern: 'base64\s+.*\|\s*(curl|wget)'
+      description: "Base64 encoded data exfiltration via curl/wget"
+
+database:
+  BLOCK:
+    # Anchor SQL destructive keywords to an actual SQL client
+    # invocation at start-of-segment. Prior patterns matched any
+    # mention of `DROP TABLE` anywhere in the command string,
+    # including `grep -i 'drop table' migrations.sql` (legit audit).
+    # The new form only fires when a known DB CLI (psql, mysql,
+    # sqlite3, mongo, etc.) is the first token and a destructive
+    # keyword appears later in the same segment. Case-insensitive
+    # so both `DROP TABLE` and `drop table` in arguments match.
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(psql|mysql|mariadb|sqlite3?|pgcli|mysqlsh|mongo|mongosh|redis-cli|cockroach|sqlcmd|snowsql|cqlsh)\s+[^;&|]*drop\s+(table|database|schema)\b'
+      description: "DROP TABLE/DATABASE/SCHEMA via SQL client"
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(psql|mysql|mariadb|sqlite3?|pgcli|mysqlsh|cockroach|sqlcmd|snowsql|cqlsh)\s+[^;&|]*truncate\s+table\b'
+      description: "TRUNCATE TABLE via SQL client"
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(psql|mysql|mariadb|sqlite3?|pgcli|mysqlsh|cockroach|sqlcmd|snowsql|cqlsh)\s+[^;&|]*delete\s+from[^;&|]*\bwhere\s+(1\s*=\s*1|true)\b'
+      description: "DELETE FROM with blanket WHERE clause"
+    - pattern: '(?i)(^|[;&|][[:space:]]*)(psql|mysql|mariadb|pgcli|mysqlsh|cockroach|sqlcmd|snowsql)\s+[^;&|]*alter\s+user[^;&|]*password'
+      description: "Direct user password change"

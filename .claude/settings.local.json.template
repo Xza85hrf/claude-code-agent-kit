@@ -1,0 +1,45 @@
+{
+  "_comment": "Generated from profiles/standard.json by install.sh. Re-generate by running: bash .claude/scripts/apply-profile.sh standard|minimal",
+  "env": {
+    "DELEGATION_MODE": "graduated",
+    "DELEGATION_THRESHOLD": "10",
+    "DELEGATION_BLOCK_THRESHOLD": "50",
+    "CAPABILITY_GATE": "enforced",
+    "CAPABILITY_TOKEN_TTL": "3600",
+    "SKILL_GATE": "enforced",
+    "CLAUDE_PLUGIN_ROOT": "${CLAUDE_PROJECT_DIR}"
+  },
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(dd if=/dev/zero*)",
+      "Bash(chmod -R 777*)",
+      "Bash(sudo *)",
+      "Bash(curl * | sh)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(wget * | bash)",
+      "Bash(:(){ :|:& };:)",
+      "Write(/etc/**)",
+      "Write(/root/**)",
+      "Write(~/.ssh/**)",
+      "Write(**/.env)",
+      "Read(**/.env)"
+    ],
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(ls *)",
+      "Bash(pwd)",
+      "Bash(echo *)",
+      "Bash(cat README*)",
+      "Bash(npm test*)",
+      "Bash(npx vitest *)",
+      "Bash(pytest *)",
+      "Bash(npx tsc *)"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "name": "standard",
+  "description": "Safety + delegation + skills + git workflow. Everything from minimal plus graduated delegation enforcement, skill-gate, capability-gate, test reminders, git push review, blast-radius, proactive skill suggestions. The default.",
+  "env": {
+    "DELEGATION_MODE": "graduated",
+    "DELEGATION_THRESHOLD": "10",
+    "DELEGATION_BLOCK_THRESHOLD": "50",
+    "CAPABILITY_GATE": "enforced",
+    "CAPABILITY_TOKEN_TTL": "3600",
+    "SKILL_GATE": "enforced"
+  },
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "startup", "script": "session-start.sh", "timeout": 5 }
+    ],
+    "UserPromptSubmit": [
+      { "script": "delegation-check.sh", "timeout": 5 }
+    ],
+    "PreToolUse": [
+      { "matcher": "Bash", "script": "damage-control.sh", "timeout": 5 },
+      { "matcher": "Bash", "if": "Bash(git *)", "script": "block-dangerous-git.sh", "timeout": 5 },
+      { "matcher": "Bash", "if": "Bash(git commit*)", "script": "validate-commit.sh", "timeout": 5 },
+      { "matcher": "Bash", "if": "Bash(git *)", "script": "blast-radius-check.sh", "timeout": 5 },
+      { "matcher": "Bash", "if": "Bash(git push*)", "script": "review-gate.sh", "timeout": 10 },
+      { "matcher": "Bash", "if": "Bash(git push*)", "script": "build-before-push.sh", "timeout": 5 },
+      { "matcher": "Bash", "if": "Bash(git push*)", "script": "git-push-review.sh", "timeout": 5 },
+      { "matcher": "Bash", "script": "safe-parallel-bash.sh", "timeout": 5 },
+      { "matcher": "Write|Edit", "script": "delegation-reminder.sh", "timeout": 5 },
+      { "matcher": "Write|Edit", "script": "capability-gate.sh", "timeout": 3 },
+      { "matcher": "Write|Edit", "script": "skill-gate.sh", "timeout": 3 },
+      { "matcher": "WebFetch|Edit|Write", "script": "prevent-common-mistakes.sh", "timeout": 5 },
+      { "script": "tool-policy-engine.sh", "timeout": 3 }
+    ],
+    "PostToolUse": [
+      { "matcher": "Write|Edit", "script": "check-secrets.sh", "timeout": 10 },
+      { "matcher": "Write|Edit", "script": "security-check.sh", "timeout": 10 },
+      { "matcher": "Write|Edit", "script": "test-reminder.sh", "timeout": 5 },
+      { "matcher": "Write|Edit", "script": "proactive-skill-trigger.sh", "timeout": 5 },
+      { "matcher": "Bash", "if": "Bash(*mcp-cli.sh ollama*)", "script": "delegation-token.sh", "timeout": 5 },
+      { "matcher": "WebFetch", "script": "handle-fetch-error.sh", "timeout": 5 },
+      { "matcher": "Skill", "script": "skill-token.sh", "timeout": 3 },
+      { "matcher": "Skill", "script": "track-skill-invocation.sh", "timeout": 3 },
+      { "matcher": "mcp__gemini__|mcp__openai__", "script": "capability-tracker.sh", "timeout": 2 }
+    ],
+    "PostToolUseFailure": [
+      { "script": "handle-tool-failure.sh", "timeout": 5 }
+    ],
+    "PermissionRequest": [
+      { "script": "auto-approve-safe-patterns.sh", "timeout": 5 }
+    ],
+    "PermissionDenied": [
+      { "script": "permission-denied-handler.sh", "timeout": 5 }
+    ],
+    "Stop": [
+      { "script": "stop-skill-check.sh", "timeout": 5 }
+    ],
+    "SessionEnd": [
+      { "script": "session-end.sh", "timeout": 10 }
+    ],
+    "StopFailure": [
+      { "script": "handle-stop-failure.sh", "timeout": 5 }
+    ]
+  }
+}

@@ -16,12 +16,37 @@ Desktop.ini
 *.key
 *.pem
 
-# Claude Code local state
+# Claude Code runtime state (generated during use, never committed)
 .claude/memory/
 .claude/*.local.md
+.claude/.*-bypass
+.claude/.tokens/
+.claude/.audit-trail.jsonl
+.claude/.metrics.jsonl
+.claude/.notifications.log
+.claude/.session-*
+.claude/.worker-*
+.claude/.workstream-*
+.claude/.last-*
+.claude/.embeddings/
+.claude/.research/
+.claude/.knowledge/
+.claude/.doc-snapshots/
+.claude/.checkpoints/
+.claude/observations.jsonl
+.claude/events.jsonl
+.claude/*.log
+.claude/archive/
+.claude/memories/
+.claude/plans/
+.claude/agent-memory/
+
+# Generated from profile — install.sh creates it
+.claude/settings.local.json
+
+# Backups from install.sh
+.claude.backup.*
+*.bak
 
 # Node modules (from npx MCP servers)
 node_modules/
-
-# Backup files from setup.sh
-*.bak

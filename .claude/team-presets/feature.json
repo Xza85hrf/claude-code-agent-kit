@@ -1,0 +1,39 @@
+{
+  "name": "feature",
+  "description": "Feature development team — lead architect + implementers with file ownership",
+  "agents": [
+    {
+      "name": "feature-lead",
+      "role": "Lead — architecture, integration, quality gates",
+      "subagent_type": "general-purpose",
+      "model": "sonnet",
+      "focus": "Design component interfaces, review implementations, manage integration, run final tests",
+      "file_ownership": ["**/types/**", "**/interfaces/**", "**/*.d.ts"]
+    },
+    {
+      "name": "impl-frontend",
+      "role": "Frontend implementer",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "UI components, styles, client-side logic, accessibility",
+      "file_ownership": ["**/components/**", "**/pages/**", "**/styles/**", "**/*.css", "**/*.tsx"]
+    },
+    {
+      "name": "impl-backend",
+      "role": "Backend implementer",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "API endpoints, database queries, middleware, business logic",
+      "file_ownership": ["**/api/**", "**/routes/**", "**/services/**", "**/db/**", "**/middleware/**"]
+    },
+    {
+      "name": "coordinator",
+      "role": "Coordinator — task dependencies, blockers, teammate communication",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "Manage task dependencies, resolve blockers, facilitate communication between teammates",
+      "file_ownership": []
+    }
+  ],
+  "task_template": "Implement {feature_description}. Your responsibility: {agent.focus}. Work within your file ownership boundaries. If you need changes in files you don't own, create a task dependency."
+}

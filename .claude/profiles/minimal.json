@@ -1,0 +1,29 @@
+{
+  "name": "minimal",
+  "description": "Safety-only hooks. Path protection, git guards, secrets scan, tool failure handling. No delegation enforcement, no workflow reminders. Best for small projects or when hooks cause friction.",
+  "env": {
+    "DELEGATION_MODE": "advisory"
+  },
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "startup", "script": "session-start.sh", "timeout": 5 }
+    ],
+    "PreToolUse": [
+      { "matcher": "Bash", "script": "damage-control.sh", "timeout": 5 },
+      { "matcher": "Bash", "if": "Bash(git *)", "script": "block-dangerous-git.sh", "timeout": 5 },
+      { "matcher": "Bash", "if": "Bash(git commit*)", "script": "validate-commit.sh", "timeout": 5 },
+      { "matcher": "Bash", "script": "safe-parallel-bash.sh", "timeout": 5 }
+    ],
+    "PostToolUse": [
+      { "matcher": "Write|Edit", "script": "check-secrets.sh", "timeout": 10 },
+      { "matcher": "Write|Edit", "script": "security-check.sh", "timeout": 10 },
+      { "matcher": "WebFetch", "script": "handle-fetch-error.sh", "timeout": 5 }
+    ],
+    "PostToolUseFailure": [
+      { "script": "handle-tool-failure.sh", "timeout": 5 }
+    ],
+    "StopFailure": [
+      { "script": "handle-stop-failure.sh", "timeout": 5 }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+# Role Profiles — role-based access control for tool permissions
+# Used by: auto-approve-safe-patterns.sh (PermissionRequest hook)
+# Inspired by Turnstone's RBAC system (15 permissions, 3 roles)
+
+roles:
+  admin:
+    description: "Full access — all tools, all permissions"
+    permissions:
+      - "tool:*"
+      - "write:*"
+      - "mcp:*"
+      - "delegation:bypass"
+      - "judge:override"
+
+  operator:
+    description: "Standard development — safe tools, guided unsafe"
+    permissions:
+      - "tool:Read|Grep|Glob|LS"
+      - "tool:Write|Edit"
+      - "tool:Bash"
+      - "mcp:ollama|context7|memory"
+      - "delegation:graduated"
+
+  viewer:
+    description: "Read-only — exploration and review only"
+    permissions:
+      - "tool:Read|Grep|Glob|LS"
+      - "mcp:context7"
+      - "delegation:none"
+
+active_role: "operator"

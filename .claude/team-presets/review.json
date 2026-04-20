@@ -1,0 +1,31 @@
+{
+  "name": "review",
+  "description": "Code review team — security, performance, and architecture specialists",
+  "agents": [
+    {
+      "name": "security-reviewer",
+      "role": "Security specialist",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "OWASP top 10, auth flows, input validation, secrets exposure, injection vectors",
+      "file_ownership": ["**/auth/**", "**/middleware/**", "**/*secret*", "**/*token*", "**/*password*"]
+    },
+    {
+      "name": "perf-reviewer",
+      "role": "Performance specialist",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "N+1 queries, unnecessary re-renders, large bundle imports, missing indexes, memory leaks",
+      "file_ownership": ["**/api/**", "**/queries/**", "**/hooks/**", "**/db/**"]
+    },
+    {
+      "name": "arch-reviewer",
+      "role": "Architecture specialist",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "SOLID violations, coupling, abstraction leaks, inconsistent patterns, dead code",
+      "file_ownership": ["**/models/**", "**/services/**", "**/utils/**", "**/lib/**"]
+    }
+  ],
+  "task_template": "Review the changes in `git diff {base_branch}...HEAD` focusing on {agent.focus}. Report issues as: [SEVERITY] file:line — description. Severity levels: CRITICAL (must fix), IMPORTANT (should fix), MINOR (consider fixing)."
+}

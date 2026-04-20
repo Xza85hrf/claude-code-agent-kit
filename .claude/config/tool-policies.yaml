@@ -1,0 +1,61 @@
+# Tool Policies — YAML-driven tool access control
+# Used by: tool-policy-engine.sh (PreToolUse, standard+ profile)
+# Inspired by Turnstone's glob-pattern tool policies
+
+policies:
+  # Auto-approve safe read-only tools (highest priority)
+  - pattern: "Read|Grep|Glob|LS"
+    action: allow
+    priority: 100
+
+  # Block writes to sensitive files
+  - pattern: "Write|Edit"
+    condition: "path matches *.env"
+    action: deny
+    reason: "Sensitive .env file modification blocked by policy"
+    priority: 90
+
+  - pattern: "Write|Edit"
+    condition: "path matches *.pem"
+    action: deny
+    reason: "Certificate/key file modification blocked by policy"
+    priority: 90
+
+  - pattern: "Write|Edit"
+    condition: "path matches *.key"
+    action: deny
+    reason: "Key file modification blocked by policy"
+    priority: 90
+
+  # Auto-approve IDE MCP tools (safe, read-heavy)
+  - pattern: "mcp__claude-ide-bridge__*"
+    action: allow
+    priority: 95
+
+  - pattern: "mcp__vscode-debug__*"
+    action: allow
+    priority: 90
+
+  - pattern: "mcp__stitch__*"
+    action: allow
+    priority: 85
+
+  - pattern: "mcp__animate-ui__*"
+    action: allow
+    priority: 85
+
+  # Auto-approve PinchTab and browser-use (browser control tools)
+  - pattern: "mcp__pinchtab__*"
+    action: allow
+    priority: 90
+
+  - pattern: "mcp__browser-use__*"
+    action: allow
+    priority: 85
+
+  # Warn on external network access (non-localhost, non-github)
+  # Note: condition check is basic — only fires if URL extracted
+  - pattern: "WebFetch|WebSearch"
+    action: warn
+    reason: "External network access — consider PinchTab (~800 tokens) over WebFetch (~10K tokens) if available"
+    priority: 50

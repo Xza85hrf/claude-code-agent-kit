@@ -1,0 +1,31 @@
+{
+  "name": "debug",
+  "description": "Debugging team — competing hypotheses with parallel investigation",
+  "agents": [
+    {
+      "name": "hypothesis-a",
+      "role": "Investigator A — data/state theory",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "Investigate data flow, state management, race conditions, stale cache as potential root causes",
+      "file_ownership": ["**/state/**", "**/store/**", "**/cache/**", "**/data/**"]
+    },
+    {
+      "name": "hypothesis-b",
+      "role": "Investigator B — infrastructure/config theory",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "Investigate configuration, environment, dependencies, network, timeouts as potential root causes",
+      "file_ownership": ["**/config/**", "**/*.env*", "**/docker*", "**/infra/**"]
+    },
+    {
+      "name": "hypothesis-c",
+      "role": "Investigator C — logic/algorithm theory",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "Investigate business logic errors, off-by-one, null handling, type coercion, edge cases as potential root causes",
+      "file_ownership": ["**/src/**", "**/lib/**", "**/utils/**"]
+    }
+  ],
+  "task_template": "Investigate the bug: {bug_description}. Your theory: {agent.focus}. Gather evidence for or against your hypothesis. Report: (1) Evidence found, (2) Root cause assessment (confirmed/unlikely/inconclusive), (3) Suggested fix if confirmed."
+}

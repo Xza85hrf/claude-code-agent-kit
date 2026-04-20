@@ -1,0 +1,27 @@
+{
+  "name": "swarm",
+  "description": "Self-organizing parallel task decomposition — dynamically decomposes large tasks into independent sub-tasks executed by parallel workers. Based on Kimi Agent Swarm + PARL research (Feb 2026).",
+  "use_when": "Large refactoring, codebase-wide audits, multi-file feature implementation, batch processing",
+  "coordinator": {
+    "agent": "coordinator",
+    "model": "sonnet",
+    "instructions": "You are a swarm coordinator. Your job is to DECOMPOSE, not EXECUTE. Break the task into independent sub-tasks that can run in parallel. Assign each sub-task to a worker with clear file ownership boundaries. Never do implementation work yourself — delegate everything. You are rewarded for delegation and penalized for self-execution (PARL principle)."
+  },
+  "workers": {
+    "min": 2,
+    "max": 8,
+    "agent": "worker",
+    "model": "haiku",
+    "auto_decompose": true,
+    "max_tool_calls_per_worker": 50,
+    "file_ownership": "auto-partition"
+  },
+  "strategy": "parallel-first",
+  "consensus_required": false,
+  "reconciliation": "coordinator reviews all worker outputs, resolves conflicts, integrates",
+  "safety": {
+    "max_total_tool_calls": 400,
+    "kill_switch_on_error_rate": 0.3,
+    "no_overlapping_file_writes": true
+  }
+}

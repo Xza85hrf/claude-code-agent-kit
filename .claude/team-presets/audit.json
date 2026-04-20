@@ -1,0 +1,39 @@
+{
+  "name": "audit",
+  "description": "Security audit team — 4 specialists covering different attack surfaces",
+  "agents": [
+    {
+      "name": "audit-injection",
+      "role": "Injection specialist",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "SQL injection, command injection, XSS, template injection, path traversal in all user input handlers",
+      "file_ownership": ["**/api/**", "**/routes/**", "**/handlers/**"]
+    },
+    {
+      "name": "audit-auth",
+      "role": "Auth & access control specialist",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "Authentication bypasses, authorization flaws, session management, CSRF, privilege escalation",
+      "file_ownership": ["**/auth/**", "**/middleware/**", "**/session/**"]
+    },
+    {
+      "name": "audit-data",
+      "role": "Data protection specialist",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "Sensitive data exposure, insecure storage, missing encryption, PII leaks in logs, improper error messages",
+      "file_ownership": ["**/models/**", "**/db/**", "**/logging/**", "**/errors/**"]
+    },
+    {
+      "name": "audit-deps",
+      "role": "Dependencies & config specialist",
+      "subagent_type": "general-purpose",
+      "model": "haiku",
+      "focus": "Known CVEs in dependencies, insecure defaults, missing security headers, permissive CORS, exposed debug endpoints",
+      "file_ownership": ["**/config/**", "package*.json", "**/*.env*", "**/docker*"]
+    }
+  ],
+  "task_template": "Audit the codebase for {agent.focus}. Report findings as: [CRITICAL|HIGH|MEDIUM|LOW] file:line — vulnerability description — remediation suggestion."
+}
